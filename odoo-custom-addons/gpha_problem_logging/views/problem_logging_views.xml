@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!-- List View -->
+        <record id="gpha_problem_tree_view" model="ir.ui.view">
+            <field name="name">gpha.problem.list</field>
+            <field name="model">gpha.problem</field>
+            <field name="arch" type="xml">
+                <list string="Problems">
+                    <field name="problem_id"/>
+                    <field name="name"/>
+                    <field name="category"/>
+                    <field name="priority"/>
+                    <field name="state"/>
+                    <field name="office"/>
+                    <field name="location"/>
+                    <field name="occurred_at"/>
+                    <field name="complainer_name"/>
+                    <field name="assignee_id"/>
+                    <field name="due_date"/>
+                    <field name="create_date"/>
+                </list>
+            </field>
+        </record>
+
+        <!-- Form View -->
+        <record id="gpha_problem_form_view" model="ir.ui.view">
+            <field name="name">gpha.problem.form</field>
+            <field name="model">gpha.problem</field>
+            <field name="arch" type="xml">
+                <form string="Problem">
+                    <header>
+                        <button name="action_submit" type="object" string="Submit" invisible="state != 'draft'" class="btn-primary"/>
+                        <button name="action_start" type="object" string="Start" invisible="state != 'submitted'" class="btn-primary"/>
+                        <button name="action_resolve" type="object" string="Resolve" invisible="state != 'in_progress'" class="btn-success"/>
+                        <button name="action_close" type="object" string="Close" invisible="state != 'resolved'" class="btn-secondary"/>
+                        <field name="state" widget="statusbar"
+                               statusbar_visible="draft,submitted,in_progress,resolved,closed"/>
+                    </header>
+                    <sheet>
+                        <div class="oe_title">
+                            <h1>
+                                <field name="name" placeholder="Problem title" readonly="state != 'draft'"/>
+                            </h1>
+                            <div>
+                                <span class="oe_inline">
+                                    <field name="problem_id" readonly="1"/>
+                                </span>
+                            </div>
+                        </div>
+
+                        <group>
+                            <group string="Employee Details">
+                                <field name="reporter_id" readonly="1"/>
+                                <field name="complainer_name" readonly="state != 'draft'"/>
+                                <field name="office" placeholder="Office / unit" readonly="state != 'draft'"/>
+                                <field name="location" placeholder="Where did it happen?" readonly="state != 'draft'"/>
+                                <field name="occurred_at" readonly="state != 'draft'"/>
+                                <field name="occurred_date" readonly="1"/>
+                                <field name="occurred_time" readonly="1"/>
+                            </group>
+                            <group string="Classification">
+                                <field name="category" readonly="state != 'draft'"/>
+                                <field name="priority" readonly="state != 'draft'"/>
+                            </group>
+                        </group>
+
+                        <group string="Support">
+                            <group>
+                                <field name="assignee_id"/>
+                                <field name="due_date"/>
+                            </group>
+                            <group>
+                                <field name="department"/>
+                            </group>
+                        </group>
+
+                        <notebook>
+                            <page string="Complaint">
+                                <field name="description" placeholder="Describe the complaint..." readonly="state != 'draft'"/>
+                            </page>
+                            <page string="Attachments">
+                                <field name="attachment_ids" widget="many2many_binary" readonly="state != 'draft'"/>
+                            </page>
+                        </notebook>
+                    </sheet>
+
+                    <chatter/>
+
+                </form>
+            </field>
+        </record>
+
+        <!-- Search View -->
+        <record id="gpha_problem_search_view" model="ir.ui.view">
+            <field name="name">gpha.problem.search</field>
+            <field name="model">gpha.problem</field>
+            <field name="arch" type="xml">
+                <search string="Problems">
+                    <field name="problem_id"/>
+                    <field name="name"/>
+                    <field name="category"/>
+                    <field name="priority"/>
+                    <field name="state"/>
+                    <field name="office"/>
+                    <field name="location"/>
+                    <field name="complainer_name"/>
+
+                    <filter string="My Problems" name="my" domain="[('reporter_id','=',uid)]"/>
+                    <separator/>
+                    <filter string="Draft" name="draft" domain="[('state','=','draft')]"/>
+                    <filter string="Submitted" name="submitted" domain="[('state','=','submitted')]"/>
+                    <filter string="In Progress" name="in_progress" domain="[('state','=','in_progress')]"/>
+                    <filter string="Resolved" name="resolved" domain="[('state','=','resolved')]"/>
+                    <filter string="Closed" name="closed" domain="[('state','=','closed')]"/>
+
+                    <group expand="0" string="Group By">
+                        <filter string="Category" name="group_by_category" context="{'group_by':'category'}"/>
+                        <filter string="Priority" name="group_by_priority" context="{'group_by':'priority'}"/>
+                        <filter string="Status" name="group_by_state" context="{'group_by':'state'}"/>
+                        <filter string="Office" name="group_by_office" context="{'group_by':'office'}"/>
+                        <filter string="Location" name="group_by_location" context="{'group_by':'location'}"/>
+                        <filter string="Assignee" name="group_by_assignee" context="{'group_by':'assignee_id'}"/>
+                    </group>
+                </search>
+            </field>
+        </record>
+
+        <!-- Actions -->
+        <record id="gpha_problem_action" model="ir.actions.act_window">
+            <field name="name">Problems</field>
+            <field name="res_model">gpha.problem</field>
+            <field name="view_mode">list,form</field>
+            <field name="help" type="html">
+                <p class="oe_view_nocontent_create">
+                    Log a new problem.
+                </p>
+            </field>
+        </record>
+
+        <!-- Graph View -->
+        <record id="gpha_problem_graph_view" model="ir.ui.view">
+            <field name="name">gpha.problem.graph</field>
+            <field name="model">gpha.problem</field>
+            <field name="arch" type="xml">
+                <graph string="Problems by Status" type="bar">
+                    <field name="state" type="row"/>
+                    <field name="id" type="measure"/>
+                </graph>
+            </field>
+        </record>
+
+        <record id="gpha_problem_dashboard_action" model="ir.actions.act_window">
+            <field name="name">Problem Dashboard</field>
+            <field name="res_model">gpha.problem</field>
+            <field name="view_mode">graph,pivot,list</field>
+            <field name="view_id" ref="gpha_problem_graph_view"/>
+            <field name="context">{'search_default_group_by_state': 1}</field>
+            <field name="domain">[]</field>
+        </record>
+
+        <!-- Menus -->
+        <menuitem id="gpha_problem_root_menu" name="Problem Logging" sequence="20"/>
+        <menuitem id="gpha_problem_menu" name="Problems" parent="gpha_problem_root_menu"
+                  action="gpha_problem_action" sequence="10"/>
+        <menuitem id="gpha_problem_dashboard_menu" name="Dashboard" parent="gpha_problem_root_menu"
+                  action="gpha_problem_dashboard_action" sequence="20"/>
+
+    </data>
+</odoo>

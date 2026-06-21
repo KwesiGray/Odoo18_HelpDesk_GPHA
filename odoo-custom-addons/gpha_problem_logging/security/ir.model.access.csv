@@ -1,0 +1,5 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_gpha_problem_complainer,gpha.problem complainer,model_gpha_problem,gpha_problem_logging.group_problem_complainer,1,1,1,0
+access_gpha_problem_coordinator,gpha.problem coordinator,model_gpha_problem,gpha_problem_logging.group_problem_coordinator,1,1,1,0
+access_gpha_problem_assignee,gpha.problem assignee,model_gpha_problem,gpha_problem_logging.group_problem_assignee,1,1,0,0
+access_gpha_problem_admin,gpha.problem admin,model_gpha_problem,gpha_problem_logging.group_problem_admin,1,1,1,1

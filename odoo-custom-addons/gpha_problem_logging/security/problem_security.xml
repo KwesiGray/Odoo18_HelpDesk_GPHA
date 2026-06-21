@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="module_category_gpha_problem_logging" model="ir.module.category">
+            <field name="name">GPHA Problem Logging</field>
+            <field name="sequence">25</field>
+        </record>
+
+        <record id="group_problem_admin" model="res.groups">
+            <field name="name">Admin</field>
+            <field name="category_id" ref="gpha_problem_logging.module_category_gpha_problem_logging"/>
+        </record>
+
+        <record id="group_problem_complainer" model="res.groups">
+            <field name="name">Complainer</field>
+            <field name="category_id" ref="gpha_problem_logging.module_category_gpha_problem_logging"/>
+        </record>
+
+        <record id="group_problem_coordinator" model="res.groups">
+            <field name="name">Coordinator</field>
+            <field name="category_id" ref="gpha_problem_logging.module_category_gpha_problem_logging"/>
+        </record>
+
+        <record id="group_problem_assignee" model="res.groups">
+            <field name="name">Assignee</field>
+            <field name="category_id" ref="gpha_problem_logging.module_category_gpha_problem_logging"/>
+        </record>
+
+        <record id="rule_problem_complainer_read_own" model="ir.rule">
+            <field name="name">Problems: complainer reads own</field>
+            <field name="model_id" ref="model_gpha_problem"/>
+            <field name="domain_force">[('reporter_id', '=', user.id)]</field>
+            <field name="groups" eval="[(4, ref('gpha_problem_logging.group_problem_complainer'))]"/>
+            <field name="perm_read" eval="1"/>
+            <field name="perm_write" eval="0"/>
+            <field name="perm_create" eval="1"/>
+            <field name="perm_unlink" eval="0"/>
+        </record>
+
+        <record id="rule_problem_complainer_write_draft_own" model="ir.rule">
+            <field name="name">Problems: complainer writes own draft</field>
+            <field name="model_id" ref="model_gpha_problem"/>
+            <field name="domain_force">[('reporter_id', '=', user.id), ('state', '=', 'draft')]</field>
+            <field name="groups" eval="[(4, ref('gpha_problem_logging.group_problem_complainer'))]"/>
+            <field name="perm_read" eval="0"/>
+            <field name="perm_write" eval="1"/>
+            <field name="perm_create" eval="0"/>
+            <field name="perm_unlink" eval="0"/>
+        </record>
+
+        <record id="rule_problem_coordinator_all" model="ir.rule">
+            <field name="name">Problems: coordinator sees all</field>
+            <field name="model_id" ref="model_gpha_problem"/>
+            <field name="domain_force">[(1,'=',1)]</field>
+            <field name="groups" eval="[(4, ref('gpha_problem_logging.group_problem_coordinator'))]"/>
+            <field name="perm_read" eval="1"/>
+            <field name="perm_write" eval="1"/>
+            <field name="perm_create" eval="1"/>
+            <field name="perm_unlink" eval="0"/>
+        </record>
+
+        <record id="rule_problem_assignee_assigned" model="ir.rule">
+            <field name="name">Problems: assignee sees assigned</field>
+            <field name="model_id" ref="model_gpha_problem"/>
+            <field name="domain_force">[('assignee_id', '=', user.id)]</field>
+            <field name="groups" eval="[(4, ref('gpha_problem_logging.group_problem_assignee'))]"/>
+            <field name="perm_read" eval="1"/>
+            <field name="perm_write" eval="1"/>
+            <field name="perm_create" eval="0"/>
+            <field name="perm_unlink" eval="0"/>
+        </record>
+
+        <record id="rule_problem_admin_all" model="ir.rule">
+            <field name="name">Problems: admin sees all</field>
+            <field name="model_id" ref="model_gpha_problem"/>
+            <field name="domain_force">[(1,'=',1)]</field>
+            <field name="groups" eval="[(4, ref('gpha_problem_logging.group_problem_admin'))]"/>
+            <field name="perm_read" eval="1"/>
+            <field name="perm_write" eval="1"/>
+            <field name="perm_create" eval="1"/>
+            <field name="perm_unlink" eval="1"/>
+        </record>
+    </data>
+</odoo>
