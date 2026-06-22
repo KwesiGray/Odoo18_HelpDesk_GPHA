@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <record id="helpdesk_ticket_form_view" model="ir.ui.view">
+            <field name="name">helpdesk.helpdesk.ticket.form</field>
+            <field name="model">helpdesk.ticket</field>
+            <field name="arch" type="xml">
+                <form string="GPHA Helpdesk Ticket">
+                     <header>
+                            <button name="action_submit" type="object" string="Submit" invisible="state != 'draft'" class="btn-primary"/>
+                            <button name="action_start" type="object" string="Start" invisible="state != 'submitted'" class="btn-primary"/>
+                            <button name="action_resolve" type="object" string="Resolve" invisible="state != 'in_progress'" class="btn-success"/>
+                            <button name="action_close" type="object" string="Close" invisible="state != 'resolved'" class="btn-secondary"/>
+                        <field name="state" widget="statusbar"
+                               statusbar_visible="draft,submitted,in_progress,pending,resolved,closed"/>
+                    </header>
+                    <sheet>
+                        <div class="oe_title">
+                            <h1>
+                                <field name="name" placeholder="Title" readonly="state != 'draft'"/>
+                            </h1>
+                        </div>
+                        <group>
+                            <group string="Ticket Details">
+                                <field name="reference"/>
+                                <field name ="description"  readonly="state != 'draft'"/>
+                                <field name="reporter_id"  readonly="state != 'draft'"/>
+                                <field name="priority" widget="priority" readonly="state != 'draft'"/>
+                                <field name="sla_deadline"/>
+                            </group>
+                            <group>
+                                <field name="ticket_type"  readonly="state != 'draft'"/>
+                                <field name="category_id"  readonly="state != 'draft'"/>
+                                <field name="assigned_to"/>
+                            </group>
+                        </group>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <record id="helpdesk_ticket_list_view" model="ir.ui.view">
+            <field name="name">helpdesk_ticket.helpdesk_ticket.list</field>
+            <field name="model">helpdesk.ticket</field>
+            <field name="arch" type="xml">
+                <list string="Tickets">
+                    <field name="name"/>
+                    <field name="assigned_to"/>
+                    <field name="priority"/>
+                    <field name="reporter_id"/>
+                    <field name="resolution_time"/>
+                    <field name="state"/>
+                </list>
+            </field>
+        </record>
+
+<!--        <record id="helpdesk_ticket_search_view" model="ir.ui.view">-->
+<!--            <field name="name">ProjectName.helpdesk_ticket.search</field>-->
+<!--            <field name="model">ProjectName.helpdesk_ticket</field>-->
+<!--            <field name="arch" type="xml">-->
+<!--                <search string="ModelTitle">-->
+<!--                    <group expand="1" string="Group By">-->
+<!--                        <filter string="Example Field" name="example_field" domain="[]"-->
+<!--                                context="{'group_by':'example_field'}"/>-->
+<!--                    </group>-->
+<!--                </search>-->
+<!--            </field>-->
+<!--        </record>-->
+
+        <record id="helpdesk_ticket_act_window" model="ir.actions.act_window">
+            <field name="name">HelpDesk</field>
+            <field name="type">ir.actions.act_window</field>
+            <field name="res_model">helpdesk.ticket</field>
+
+            <field name="view_mode">list,form</field>
+            <field name="help" type="html">
+                <p class="oe_view_nocontent_create">
+                    There is no examples click here to add new ModelTitle.
+                </p>
+            </field>
+        </record>
+
+        <menuitem name="Help Desk" id="helpdesk_ticket_menu"  action="helpdesk_ticket_act_window"/>
+
+    </data>
+</odoo>

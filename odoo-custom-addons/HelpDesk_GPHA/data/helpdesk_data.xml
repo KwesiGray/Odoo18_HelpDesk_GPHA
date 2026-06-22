@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!--
+            noupdate="1" means: load these records on FIRST install only.
+            If someone renames a category in production, an upgrade won't
+            overwrite their changes. Remove noupdate to always reset on upgrade.
+        -->
+
+        <!-- IT categories -->
+        <record id="category_it_hardware" model="helpdesk.category">
+            <field name="name">IT Hardware</field>
+            <field name="ticket_type">it</field>
+            <field name="sequence">10</field>
+            <field name="description">
+                Physical hardware issues — laptops, monitors, printers, peripherals.
+            </field>
+        </record>
+
+        <record id="category_it_software" model="helpdesk.category">
+            <field name="name">IT Software</field>
+            <field name="ticket_type">it</field>
+            <field name="sequence">20</field>
+            <field name="description">
+                Software, applications, licences, OS issues.
+            </field>
+        </record>
+
+        <record id="category_it_network" model="helpdesk.category">
+            <field name="name">Network / Connectivity</field>
+            <field name="ticket_type">it</field>
+            <field name="sequence">30</field>
+            <field name="description">
+                Internet, VPN, Wi-Fi, LAN issues.
+            </field>
+        </record>
+
+        <!-- Field / Operational categories -->
+        <record id="category_field_equipment" model="helpdesk.category">
+            <field name="name">Field Equipment</field>
+            <field name="ticket_type">field</field>
+            <field name="sequence">40</field>
+            <field name="description">
+                Machinery, tools, vehicles in the field.
+            </field>
+        </record>
+
+        <record id="category_field_safety" model="helpdesk.category">
+            <field name="name">Safety Incident</field>
+            <field name="ticket_type">field</field>
+            <field name="sequence">50</field>
+            <field name="description">
+                Health and safety incidents, near-misses.
+            </field>
+        </record>
+
+        <!-- Default tags -->
+        <record id="tag_urgent" model="helpdesk.tag">
+            <field name="name">Urgent</field>
+            <field name="color">1</field>
+        </record>
+
+        <record id="tag_recurring" model="helpdesk.tag">
+            <field name="name">Recurring</field>
+            <field name="color">3</field>
+        </record>
+
+        <record id="tag_waiting_vendor" model="helpdesk.tag">
+            <field name="name">Waiting on vendor</field>
+            <field name="color">6</field>
+        </record>
+
+    </data>
+</odoo>
