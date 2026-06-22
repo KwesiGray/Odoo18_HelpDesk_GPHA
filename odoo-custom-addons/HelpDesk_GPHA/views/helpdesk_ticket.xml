@@ -2,86 +2,519 @@
 <odoo>
     <data>
 
+        <!-- Form View -->
         <record id="helpdesk_ticket_form_view" model="ir.ui.view">
             <field name="name">helpdesk.helpdesk.ticket.form</field>
             <field name="model">helpdesk.ticket</field>
             <field name="arch" type="xml">
                 <form string="GPHA Helpdesk Ticket">
-                     <header>
-                            <button name="action_submit" type="object" string="Submit" invisible="state != 'draft'" class="btn-primary"/>
-                            <button name="action_start" type="object" string="Start" invisible="state != 'submitted'" class="btn-primary"/>
-                            <button name="action_resolve" type="object" string="Resolve" invisible="state != 'in_progress'" class="btn-success"/>
-                            <button name="action_close" type="object" string="Close" invisible="state != 'resolved'" class="btn-secondary"/>
-                        <field name="state" widget="statusbar"
-                               statusbar_visible="draft,submitted,in_progress,pending,resolved,closed"/>
+                    <header>
+                        <button
+                                name="action_submit"
+                                type="object"
+                                string="Submit"
+                                invisible="state != 'draft'"
+                                class="btn-primary"
+                                confirm="Are you sure you want to submit this Ticket?"
+                        />
+                        <button
+                                name="action_start"
+                                type="object"
+                                string="Start"
+                                invisible="state != 'submitted'"
+                                class="btn-primary"
+                        />
+                        <button
+                                name="action_pending"
+                                type="object"
+                                string="Set Pending"
+                                invisible="state != 'submitted'"
+                                class="btn-primary"
+                        />
+                        <button
+                                name="action_resolve"
+                                type="object"
+                                string="Resolve"
+                                invisible="state != 'in_progress'"
+                                class="btn-success"
+                        />
+                        <button
+                                name="action_close"
+                                type="object"
+                                string="Close"
+                                invisible="state != 'resolved'"
+                                class="btn-secondary"
+                        />
+                        <button
+                                name="action_reopen"
+                                type="object"
+                                string="Reopen"
+                                invisible="state not in ('resolved', 'closed')"
+                                class="btn-secondary"
+                        />
+                        <field
+                                name="state"
+                                widget="statusbar"
+                                statusbar_visible="draft,submitted,in_progress,resolved,closed"
+                        />
                     </header>
+
+                    <div class="oe_button_box" name="button_box">
+                        <button type="object" name="action_view_logs" class="oe_stat_button" icon="fa-history">
+                            <field name="log_count" widget="statinfo" string="Logs"/>
+                        </button>
+
+                        <button type="object" name="action_view_logs" class="oe_stat_button" icon="fa-clock-o">
+                            <field name="total_time_spent" widget="statinfo" string="Hours"/>
+                        </button>
+
+                        <button
+                                type="object"
+                                name="action_view_logs"
+                                class="oe_stat_button"
+                                icon="fa-exclamation-triangle"
+                                invisible="not is_overdue"
+                                style="color: var(--danger);"
+                        >
+                            <div class="o_stat_info">
+                                <span class="o_stat_text">Overdue</span>
+                            </div>
+                        </button>
+                    </div>
+
                     <sheet>
                         <div class="oe_title">
+                            <h5>
+                                <field name="reference" readonly="1"/>
+                            </h5>
                             <h1>
-                                <field name="name" placeholder="Title" readonly="state != 'draft'"/>
+                                <field name="name" placeholder="Describe the problem in one line..."/>
                             </h1>
+                            <field name="priority" widget="priority"/>
                         </div>
+
                         <group>
-                            <group string="Ticket Details">
-                                <field name="reference"/>
-                                <field name ="description"  readonly="state != 'draft'"/>
-                                <field name="reporter_id"  readonly="state != 'draft'"/>
-                                <field name="priority" widget="priority" readonly="state != 'draft'"/>
-                                <field name="sla_deadline"/>
+                            <group string="Problem details">
+                                <field
+                                        name="category_id"
+                                        domain="[('active', '=', True)]"
+                                        options="{'no_create': False, 'no_open': True}"
+                                />
+                                <field name="ticket_type" readonly="1"/>
+                                <field
+                                        name="tag_ids"
+                                        widget="many2many_tags"
+                                        options="{'color_field': 'color'}"
+                                />
+                                <field name="kanban_state" widget="state_selection"/>
                             </group>
-                            <group>
-                                <field name="ticket_type"  readonly="state != 'draft'"/>
-                                <field name="category_id"  readonly="state != 'draft'"/>
-                                <field name="assigned_to"/>
+
+                            <group string="Assignment &amp; dates">
+                                <field name="reporter_id" widget="many2one_avatar_user"/>
+                                <field
+                                        name="assigned_to"
+                                        widget="many2one_avatar_user"
+                                        domain="[('share', '=', False)]"
+                                />
+                                <field name="sla_deadline" widget="remaining_days"/>
+                                <field
+                                        name="date_resolved"
+                                        readonly="1"
+                                        invisible="state not in ('resolved', 'closed')"
+                                />
+                                <field name="is_overdue" invisible="1"/>
                             </group>
                         </group>
+
+                        <group>
+                            <field
+                                    name="description"
+                                    colspan="2"
+                                    nolabel="1"
+                                    placeholder="Describe the problem in detail — steps to reproduce, error messages, location, equipment affected..."
+                            />
+                        </group>
+
+                        <notebook>
+
+                            <!-- TAB 1: Activity Log -->
+                            <page string="Activity Log" name="tab_log">
+                                <field name="log_ids" readonly="1">
+                                    <list>
+                                        <field name="logged_at"/>
+                                        <field name="action_type" widget="badge"/>
+                                        <field name="old_state" string="From"/>
+                                        <field name="new_state" string="To"/>
+                                        <field name="user_id" widget="many2one_avatar_user"/>
+                                        <field name="note"/>
+                                        <field name="time_spent" string="Hrs"/>
+                                    </list>
+                                </field>
+                            </page>
+
+                            <!-- TAB 2: Time Tracking -->
+                            <page string="Time Tracking" name="tab_time">
+                                <group>
+                                    <group>
+                                        <field name="total_time_spent" readonly="1" string="Total time (hrs)"/>
+                                        <field name="resolution_time" readonly="1" string="Resolution time (hrs)"
+                                               invisible="state not in ('resolved','closed')"/>
+                                    </group>
+                                </group>
+                                <!-- Inline time log entry form -->
+                                <field name="log_ids">
+                                    <list editable="bottom">
+
+                                        <field name="logged_at"/>
+                                        <field name="user_id" widget="many2one_avatar_user"/>
+                                        <field name="action_type" column_invisible="1"/>
+                                        <field name="note" placeholder="What did you work on?"/>
+                                        <field name="time_spent" string="Hours"/>
+                                    </list>
+                                </field>
+                            </page>
+
+                            <!-- TAB 3: Extra Info -->
+                            <page string="Extra Info" name="tab_extra"
+                                  groups="group_helpdesk_manager">
+                                <!--
+                                    groups= attribute on <page> → this entire tab
+                                    is only visible to Helpdesk Managers.
+                                    Regular users never see it.
+                                    This is how you show manager-only fields
+                                    without building a separate view.
+                                -->
+                                <group>
+                                    <group string="Audit">
+                                        <field name="create_date"
+                                               string="Logged on"
+                                               readonly="1"/>
+                                        <field name="create_uid"
+                                               string="Logged by"
+                                               readonly="1"/>
+                                        <field name="write_date"
+                                               string="Last updated"
+                                               readonly="1"/>
+                                    </group>
+                                    <group string="SLA">
+                                        <field name="sla_deadline" readonly="1"/>
+                                        <field name="resolution_time"
+                                               readonly="1"
+                                               string="Resolution time (hrs)"/>
+                                    </group>
+                                </group>
+                            </page>
+
+                        </notebook>
+
+
                     </sheet>
                 </form>
             </field>
         </record>
 
+        <!-- List View -->
         <record id="helpdesk_ticket_list_view" model="ir.ui.view">
             <field name="name">helpdesk_ticket.helpdesk_ticket.list</field>
             <field name="model">helpdesk.ticket</field>
             <field name="arch" type="xml">
-                <list string="Tickets">
+                <list
+                        string="Problem Tickets"
+                        decoration-danger="is_overdue == True"
+                        decoration-warning="state == 'pending'"
+                        decoration-success="state == 'resolved'"
+                        decoration-muted="state == 'closed'"
+                >
+                    <field name="reference" string="Ticket ID" readonly="1"/>
                     <field name="name"/>
-                    <field name="assigned_to"/>
-                    <field name="priority"/>
                     <field name="reporter_id"/>
-                    <field name="resolution_time"/>
-                    <field name="state"/>
+                    <field name="priority"/>
+                    <field name="assigned_to"/>
+                    <field name="ticket_type" widget="badge"/>
+                    <field name="sla_deadline" string="SLA Due" widget="remaining_days"/>
+                    <field name="total_time_spent" string="Time (hrs)"/>
+                    <field name="is_overdue" column_invisible="1"/>
+                    <field
+                            name="state"
+                            widget="badge"
+                            decoration-success="state == 'resolved'"
+                            decoration-info="state == 'in_progress'"
+                    />
                 </list>
             </field>
         </record>
 
-<!--        <record id="helpdesk_ticket_search_view" model="ir.ui.view">-->
-<!--            <field name="name">ProjectName.helpdesk_ticket.search</field>-->
-<!--            <field name="model">ProjectName.helpdesk_ticket</field>-->
-<!--            <field name="arch" type="xml">-->
-<!--                <search string="ModelTitle">-->
-<!--                    <group expand="1" string="Group By">-->
-<!--                        <filter string="Example Field" name="example_field" domain="[]"-->
-<!--                                context="{'group_by':'example_field'}"/>-->
-<!--                    </group>-->
-<!--                </search>-->
-<!--            </field>-->
-<!--        </record>-->
 
+        <!-- ═══════════════════════════════════════════════════════════════════════
+     KANBAN VIEW
+     Cards grouped by state — the pipeline board.
+═══════════════════════════════════════════════════════════════════════════ -->
+        <record id="view_helpdesk_ticket_kanban" model="ir.ui.view">
+            <field name="name">helpdesk.ticket.kanban</field>
+            <field name="model">helpdesk.ticket</field>
+            <field name="arch" type="xml">
+
+                <kanban
+                        default_group_by="state"
+                        class="o_kanban_small_column"
+                        on_create="quick_create"
+                        quick_create_view="helpdesk_problem_log.view_helpdesk_ticket_quick_create"
+                        records_draggable="1"
+                        group_create="0"
+                >
+                    <!--
+                        default_group_by="state"
+                            Each distinct state value becomes a column.
+                            Draft | In Progress | Pending | Resolved | Closed
+
+                        class="o_kanban_small_column"
+                            Odoo built-in CSS — makes columns narrower so more
+                            fit on screen.
+
+                        on_create="quick_create"
+                            When the user clicks "+ New" in a column header,
+                            show a quick-create mini-form inside the column
+                            instead of opening the full form view.
+
+                        quick_create_view=
+                            The external ID of a minimal form view used for
+                            quick creation. We'll define this below.
+
+                        records_draggable="1"
+                            Allows drag-and-drop cards between columns.
+                            Dragging a card to a new column writes the new
+                            state to the record automatically.
+
+                        group_create="0"
+                            Disables the "+ Add a column" button at the end
+                            of the board. State values are fixed — users
+                            shouldn't be able to invent new states from the UI.
+                    -->
+
+                    <!-- ══════════════════════════════════════════════════════
+                         FIELDS — declare every field the card template uses.
+                         Odoo only fetches declared fields for kanban records.
+                         Undeclared fields are not available in the template.
+                    ══════════════════════════════════════════════════════════ -->
+                    <field name="name"/>
+                    <field name="reference"/>
+                    <field name="priority" widget="priority"/>
+                    <field name="state"/>
+                    <field name="kanban_state"/>
+                    <field name="ticket_type"/>
+                    <field name="category_id"/>
+                    <field name="assigned_to" widget="many2one_avatar_user"/>
+                    <field name="is_overdue"/>
+                    <field name="sla_deadline"/>
+                    <field name="tag_ids" widget="many2many_tags"
+                           options="{'color_field': 'color'}"/>
+
+                    <!-- ══════════════════════════════════════════════════════
+                         CARD TEMPLATE — QWeb HTML template for each card.
+                         t-name="kanban-box" is REQUIRED — this exact name
+                         tells Odoo "this template is the card layout".
+                    ══════════════════════════════════════════════════════════ -->
+                    <templates>
+                        <t t-name="kanban-box">
+                            <!--
+                                Everything inside <t t-name="kanban-box"> renders
+                                once per record — one card per ticket.
+                                QWeb expressions use t-* attributes.
+                            -->
+
+                            <div t-attf-class="
+                        oe_kanban_card
+                        oe_kanban_global_click
+                        #{record.is_overdue.raw_value ? 'border-danger' : ''}
+                        #{record.kanban_state.raw_value == 'blocked' ? 'border-warning' : ''}
+                    ">
+                                <!--
+                                    oe_kanban_card        → base card styling (white box, shadow)
+                                    oe_kanban_global_click → clicking anywhere on the card
+                                                             opens the form view (not just
+                                                             clicking the title).
+                                    t-attf-class=        → "attf" = attribute + format string.
+                                                           Lets you build a class string with
+                                                           inline #{expression} interpolation.
+                                    border-danger        → Odoo built-in: adds a red left border
+                                    border-warning       → adds an amber left border
+                                    raw_value            → gets the stored value of the field
+                                                           (e.g. True/False for Boolean,
+                                                           'blocked' for Selection).
+                                                           Without raw_value you'd get the
+                                                           display label ("Blocked") not
+                                                           the stored key.
+                                -->
+
+                                <!-- ── Card top bar: kanban state dot + priority ── -->
+                                <div class="oe_kanban_top_area">
+                                    <div class="o_kanban_record_top">
+
+                                        <!-- Kanban state coloured dot (left side) -->
+                                        <div class="o_kanban_record_headings">
+                                            <field name="kanban_state"
+                                                   widget="state_selection"
+                                                   readonly="0"/>
+                                            <!--
+                                                widget="state_selection" renders the
+                                                green/red/grey dot indicator.
+                                                readonly="0" → user can click it to
+                                                change kanban_state without opening
+                                                the full form.
+                                            -->
+                                        </div>
+
+                                        <!-- Priority stars (right side) -->
+                                        <div class="o_kanban_record_top_right">
+                                            <field name="priority" widget="priority"/>
+                                        </div>
+
+                                    </div>
+                                </div>
+
+                                <!-- ── Card body: reference + title ── -->
+                                <div class="o_kanban_record_body">
+
+                                    <!-- Reference number — subdued -->
+                                    <small class="text-muted">
+                                        <t t-esc="record.reference.value"/>
+                                        <!--
+                                            t-esc= outputs the field's display value
+                                            safely (HTML-escaped — prevents XSS).
+                                            .value → the formatted display value
+                                                     (e.g. "TKT/2024/0001")
+                                            .raw_value → the stored DB value
+                                        -->
+                                    </small>
+
+                                    <!-- Ticket subject — main card title -->
+                                    <strong>
+                                        <field name="name"/>
+                                        <!--
+                                            Using <field name="name"/> directly
+                                            inside the template is the simpler
+                                            alternative to t-esc for fields that
+                                            don't need conditional logic.
+                                        -->
+                                    </strong>
+
+                                    <!-- Overdue warning badge -->
+                                    <t t-if="record.is_overdue.raw_value">
+                                        <span class="badge bg-danger mt-1">
+                                            ⚠ Overdue
+                                        </span>
+                                        <!--
+                                            t-if= → only renders this element when
+                                            the expression is truthy.
+                                            is_overdue.raw_value is True/False.
+                                            This badge only appears on overdue tickets.
+                                        -->
+                                    </t>
+
+                                    <!-- Tags row -->
+                                    <div class="mt-1">
+                                        <field name="tag_ids"
+                                               widget="many2many_tags"
+                                               options="{'color_field': 'color'}"/>
+                                    </div>
+
+                                </div>
+
+                                <!-- ── Card footer: category badge + assignee avatar ── -->
+                                <div class="o_kanban_record_bottom">
+                                    <div class="oe_kanban_bottom_left">
+
+                                        <!-- Type badge — IT or Field -->
+                                        <t t-if="record.ticket_type.raw_value == 'it'">
+                                            <span class="badge"
+                                                  style="background:#EEEDFE;color:#3C3489;">
+                                                IT
+                                            </span>
+                                        </t>
+                                        <t t-if="record.ticket_type.raw_value == 'field'">
+                                            <span class="badge"
+                                                  style="background:#E1F5EE;color:#085041;">
+                                                Field
+                                            </span>
+                                        </t>
+
+                                        <!-- Category name -->
+                                        <span class="text-muted" style="font-size:11px;">
+                                            <t t-esc="record.category_id.value"/>
+                                            <!--
+                                                For Many2one fields, .value returns
+                                                the display name of the linked record
+                                                (the category's name).
+                                            -->
+                                        </span>
+
+                                    </div>
+                                    <div class="oe_kanban_bottom_right">
+
+                                        <!-- Assignee avatar -->
+                                        <field name="assigned_to"
+                                               widget="many2one_avatar_user"/>
+                                        <!--
+                                            In the kanban footer, this renders
+                                            just the circular avatar — compact
+                                            and immediately recognisable.
+                                        -->
+
+                                    </div>
+                                </div>
+
+                            </div>
+                        </t>
+                    </templates>
+
+                </kanban>
+
+            </field>
+        </record>
+
+
+        <!-- ═══════════════════════════════════════════════════════════════════════
+             QUICK CREATE VIEW
+             The mini-form that appears when clicking "+ New" inside a kanban column.
+             Keep it minimal — just the fields needed to create a valid ticket.
+             Users can open the full form after creation.
+        ═══════════════════════════════════════════════════════════════════════════ -->
+        <record id="view_helpdesk_ticket_quick_create" model="ir.ui.view">
+            <field name="name">helpdesk.ticket.quick.create</field>
+            <field name="model">helpdesk.ticket</field>
+            <field name="arch" type="xml">
+                <form>
+                    <group>
+                        <field name="name"
+                               placeholder="Describe the problem..."
+                               autofocus="autofocus"/>
+                        <!--
+                            autofocus → cursor lands here automatically
+                            when the quick-create form opens.
+                        -->
+                        <field name="category_id"/>
+                        <field name="priority" widget="priority"/>
+                        <field name="assigned_to" widget="many2one_avatar_user"/>
+                    </group>
+                </form>
+            </field>
+        </record>
+
+        <!-- Action -->
         <record id="helpdesk_ticket_act_window" model="ir.actions.act_window">
             <field name="name">HelpDesk</field>
             <field name="type">ir.actions.act_window</field>
             <field name="res_model">helpdesk.ticket</field>
-
-            <field name="view_mode">list,form</field>
+            <field name="view_mode">list,kanban,form</field>
             <field name="help" type="html">
                 <p class="oe_view_nocontent_create">
-                    There is no examples click here to add new ModelTitle.
+                    There is no examples click here to add new Logs.
                 </p>
             </field>
         </record>
 
-        <menuitem name="Help Desk" id="helpdesk_ticket_menu"  action="helpdesk_ticket_act_window"/>
+        <!-- Menu -->
+        <menuitem id="helpdesk_ticket_menu" name="Help Desk" action="helpdesk_ticket_act_window"/>
 
     </data>
 </odoo>

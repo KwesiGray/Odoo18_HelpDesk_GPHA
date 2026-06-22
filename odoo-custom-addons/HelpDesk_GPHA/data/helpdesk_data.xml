@@ -70,5 +70,16 @@
             <field name="color">6</field>
         </record>
 
+        <!-- Auto-incrementing ticket reference sequence -->
+        <record id="seq_helpdesk_ticket" model="ir.sequence">
+            <field name="name">Helpdesk Ticket</field>
+            <field name="code">helpdesk.ticket</field>
+            <field name="prefix">TKT/%(year)s/</field>
+            <field name="padding">4</field>
+            <!-- padding=4 → zero-pads to 4 digits: TKT/2024/0001 -->
+            <field name="company_id" eval="False"/>
+            <!-- eval="False" → shared across all companies (not company-specific) -->
+        </record>
+
     </data>
 </odoo>

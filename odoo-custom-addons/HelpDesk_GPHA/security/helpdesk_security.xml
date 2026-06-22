@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+<data>
+    <!-- how the groups appear in the settings pane -->
+    <record id="module_helpdesk_category" model="ir.module.category">
+        <field name="name">Helpdesk</field>
+        <field name="description">Manage access to the Helpdesk Problem Log</field>
+        <field name="sequence">100</field>
+    </record>
+
+    <!--
+        GROUP 1: Helpdesk User
+        Regular staff who log and track their own tickets.
+    -->
+    <record id="group_helpdesk_user" model="res.groups">
+        <field name="name">Helpdesk User</field>
+        <field name="category_id" ref="module_helpdesk_category"/>
+        <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+    </record>
+
+    <!--
+        GROUP 2: Helpdesk Manager
+        Team leads and admins — full access, can configure categories,
+        see all tickets, run reports.
+    -->
+    <record id="group_helpdesk_manager" model="res.groups">
+        <field name="name">Helpdesk Manager</field>
+        <field name="category_id" ref="module_helpdesk_category"/>
+    </record>
+
+    <!-- Assigned to group -->
+    <record id="group_helpdesk_assignee" model="res.groups">
+        <field name="name">Helpdesk Assignee</field>
+        <field name="category_id" ref="module_helpdesk_category"/>
+    </record>
+
+    <!-- Coordinator group -->
+    <record id="group_helpdesk_coordinator" model="res.groups">
+        <field name="name">Helpdesk Coordinator</field>
+        <field name="category_id" ref="module_helpdesk_category"/>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         LAYER 3 — RECORD RULES
+    ═══════════════════════════════════════════════════════════════════════ -->
+
+    <record id="rule_helpdesk_ticket_complainer" model="ir.rule">
+        <field name="name">Helpdesk Ticket: Users see their tickets</field>
+        <field name="model_id" ref="model_helpdesk_ticket"/>
+        <field name="domain_force">[('reporter_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('group_helpdesk_user'))]"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+
+    <record id="rule_helpdesk_ticket_admin" model="ir.rule">
+        <field name="name">Helpdesk Ticket: Managers see all tickets</field>
+        <field name="model_id" ref="model_helpdesk_ticket"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('group_helpdesk_manager'))]"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="True"/>
+    </record>
+
+    <record id="rule_helpdesk_log_admin" model="ir.rule">
+        <field name="name">Helpdesk Log: Users see all logs</field>
+        <field name="model_id" ref="model_helpdesk_ticket_log"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('group_helpdesk_manager'))]"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="False"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+
+    <record id="rule_helpdesk_log_complainer" model="ir.rule">
+        <field name="name">Helpdesk Log: Users see their logs</field>
+        <field name="model_id" ref="model_helpdesk_ticket_log"/>
+        <field name="domain_force">[('user_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('group_helpdesk_user'))]"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="False"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+
+</data>
+</odoo>

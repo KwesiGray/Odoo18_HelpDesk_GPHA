@@ -50,18 +50,18 @@ class HelpdeskTicket(models.Model):
         tracking=True,
     )
 
-
     ticket_type = fields.Selection(
-        selection=[
-            ('it', 'IT / Technical'),
-            ('field', 'Field / Operational'),
-            ('hr', 'HR OPERATIONS'),
-            ('support', 'Support'),
-            ('other', 'Other'),
-        ],
+        related='category_id.ticket_type',
+        # related= reads the ticket_type field from the linked category record.
+        # When a user picks "IT Hardware" as category, ticket_type automatically
+        # becomes 'it'. No second dropdown. No user effort.
         string='Type',
-        required=True,
-        tracking=True,
+        store=True,
+        # store=True writes it to the helpdesk_ticket table so you can
+        # still filter and group by type in reports and list views.
+        readonly=True,
+        # readonly=True because the user should never set this directly —
+        # it comes from the category.
     )
 
     category_id = fields.Many2one(
@@ -196,9 +196,41 @@ class HelpdeskTicket(models.Model):
         string='Activity log',
     )
 
+    total_time_spent = fields.Float(
+        string='Total time spent (hrs)',
+        compute='_compute_total_time',
+        store=True,
+        digits=(10, 2),
+    )
+
+    log_count = fields.Integer(
+        string='Log entries',
+        compute='_compute_log_count',
+    )
+
     # ══════════════════════════════════════════════════════════════════════
     # 9. COMPUTE METHODS
     # ══════════════════════════════════════════════════════════════════════
+
+    @api.depends('log_ids')
+    def _compute_log_count(self):
+        for rec in self:
+            rec.log_count = len(rec.log_ids)
+
+    @api.depends('log_ids.time_spent')
+    def _compute_total_time(self):
+        """
+        @api.depends('log_ids.time_spent') — note the dot notation.
+        This tells Odoo: "recalculate when ANY log entry's time_spent
+        field changes on ANY log linked to this ticket."
+        Dot notation through relational fields is one of Odoo's
+        most powerful @api.depends features.
+        """
+        for rec in self:
+            rec.total_time_spent = sum(rec.log_ids.mapped('time_spent'))
+            # .mapped('time_spent') → returns a list of all time_spent
+            # values across the entire log_ids recordset.
+            # sum() adds them up. Clean, readable, and works on 0 records too.
 
     @api.depends('create_date', 'priority')
     def _compute_sla_deadline(self):
@@ -278,62 +310,115 @@ class HelpdeskTicket(models.Model):
     # 11. STATE TRANSITION METHODS (the state machine)
     # ══════════════════════════════════════════════════════════════════════
 
+    def _log_action(self, action_type, old_state=None, new_state=None, note=None):
+        """
+        Internal helper — creates a structured log entry.
+        Called by every state transition method so log entries
+        are created consistently without repeating code.
+
+        This is a private method (prefix _) — not exposed in the UI.
+        """
+        self.env['helpdesk.ticket.log'].create({
+            'ticket_id': self.id,
+            'action_type': action_type,
+            'old_state': old_state,
+            'new_state': new_state,
+            'note': note,
+            'user_id': self.env.user.id,
+            'logged_at': fields.Datetime.now(),
+        })
+
+    def action_view_logs(self):
+        """Open log entries for this ticket in a list view."""
+        return {
+            'type': 'ir.actions.act_window',
+            'name': f'Logs — {self.name}',
+            'res_model': 'helpdesk.ticket.log',
+            'view_mode': 'tree,form',
+            'domain': [('ticket_id', '=', self.id)],
+            'context': {'default_ticket_id': self.id},
+        }
+        # Returning a dict from a button method opens a new view.
+        # domain= pre-filters to only this ticket's logs.
+        # context= pre-fills ticket_id if the user creates a new log from there.
+
+
+
     def action_submit(self):
-        """Move ticket from draft → submitted."""
+        """draft → Submitted"""
         for rec in self:
             if rec.state != 'draft':
-                raise UserError(
-                    f'Ticket "{rec.name}" is already submitted or beyond.'
-                )
+                raise UserError(f'Ticket "{rec.name}" is not in draft state.')
+            old = rec.state
             rec.state = 'submitted'
+            rec._log_action('state_change', old_state=old, new_state='submitted')
+
+
+    # def action_start(self):
+    #     """Move ticket from draft → in_progress."""
+    #     for rec in self:
+    #         if rec.state != 'submitted':
+    #             raise UserError(
+    #                 f'Ticket "{rec.name}" is already submitted or beyond.'
+    #             )
+    #         rec.state = 'in_progress'
 
     def action_start(self):
-        """Move ticket from draft → in_progress."""
+        """Submitted → In Progress"""
         for rec in self:
             if rec.state != 'submitted':
-                raise UserError(
-                    f'Ticket "{rec.name}" is already submitted or beyond.'
-                )
+                raise UserError(f'Ticket "{rec.name}" is not in Submitted state.')
+            old = rec.state
             rec.state = 'in_progress'
+            rec._log_action('state_change', old_state=old, new_state='in_progress')
+
 
     def action_pending(self):
-        """Move ticket to Pending — waiting on something external."""
+        """In Progress → Pending"""
         for rec in self:
             if rec.state not in ('draft', 'in_progress'):
-                raise UserError('Only tickets in Draft or In Progress tickets can be set to Pending.')
+                raise UserError('Only Draft or In Progress tickets can be set to Pending.')
+            old = rec.state
             rec.state = 'pending'
+            rec._log_action('state_change', old_state=old, new_state='pending')
+
 
     def action_resolve(self):
-        """
-        Resolve the ticket.
-        Sets date_resolved which triggers _compute_resolution_time
-        via @api.depends, automatically calculating resolution hours.
-        """
+        """Any open state → Resolved"""
         for rec in self:
             if rec.state == 'closed':
-                raise UserError('A closed ticket cannot be resolved. Reopen it first.')
+                raise UserError('A closed ticket cannot be resolved directly.')
+            old = rec.state
             rec.write({
                 'state': 'resolved',
                 'date_resolved': fields.Datetime.now(),
             })
+            rec._log_action(
+                'resolution',
+                old_state=old,
+                new_state='resolved',
+                note=f'Resolved by {rec.env.user.name}',
+            )
 
     def action_close(self):
-        """Close a resolved ticket. Resolved → Closed only."""
+        """Resolved → Closed"""
         for rec in self:
             if rec.state != 'resolved':
                 raise UserError('Only resolved tickets can be closed.')
+            old = rec.state
             rec.state = 'closed'
+            rec._log_action('state_change', old_state=old, new_state='closed')
+
 
     def action_reopen(self):
-        """Reopen a resolved or closed ticket back to In Progress."""
+        """Resolved / Closed → In Progress"""
         for rec in self:
             if rec.state not in ('resolved', 'closed'):
                 raise UserError('Only resolved or closed tickets can be reopened.')
-            rec.write({
-                'state': 'in_progress',
-                'date_resolved': False,
-                # Clear the resolved date — resolution clock resets
-            })
+            old = rec.state
+            rec.write({'state': 'in_progress', 'date_resolved': False})
+            rec._log_action('state_change', old_state=old, new_state='in_progress',
+                            note='Ticket reopened')
 
     # ══════════════════════════════════════════════════════════════════════
     # 12. VALIDATION
