@@ -3,23 +3,19 @@ id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
 access_helpdesk_ticket_user,helpdesk.ticket user,model_helpdesk_ticket,HelpDesk_GPHA.group_helpdesk_user,1,1,1,0
 access_helpdesk_category_user,helpdesk.category user,model_helpdesk_category,HelpDesk_GPHA.group_helpdesk_user,1,0,0,0
 access_helpdesk_tag_user,helpdesk.tag user,model_helpdesk_tag,HelpDesk_GPHA.group_helpdesk_user,1,0,1,0
-access_helpdesk_ticket_log_user,helpdesk.ticket.log user,model_helpdesk_ticket_log,HelpDesk_GPHA.group_helpdesk_user,1,0,1,0
+access_helpdesk_ticket_log_user,helpdesk.ticket log user,model_helpdesk_ticket_log,HelpDesk_GPHA.group_helpdesk_user,1,0,1,0
 
+access_helpdesk_ticket_coordinator,helpdesk.ticket coordinator,model_helpdesk_ticket,HelpDesk_GPHA.group_helpdesk_coordinator,1,1,1,0
+access_helpdesk_category_coordinator,helpdesk.category coordinator,model_helpdesk_category,HelpDesk_GPHA.group_helpdesk_coordinator,1,1,1,0
+access_helpdesk_tag_coordinator,helpdesk.tag coordinator,model_helpdesk_tag,HelpDesk_GPHA.group_helpdesk_coordinator,1,1,1,0
+access_helpdesk_ticket_log_coordinator,helpdesk.ticket log coordinator,model_helpdesk_ticket_log,HelpDesk_GPHA.group_helpdesk_coordinator,1,1,1,0
 
+access_helpdesk_ticket_assignee,helpdesk.ticket assignee,model_helpdesk_ticket,HelpDesk_GPHA.group_helpdesk_assignee,1,1,0,0
+access_helpdesk_category_assignee,helpdesk.category assignee,model_helpdesk_category,HelpDesk_GPHA.group_helpdesk_assignee,1,0,0,0
+access_helpdesk_tag_assignee,helpdesk.tag assignee,model_helpdesk_tag,HelpDesk_GPHA.group_helpdesk_assignee,1,0,0,0
+access_helpdesk_ticket_log_assignee,helpdesk.ticket log assignee,model_helpdesk_ticket_log,HelpDesk_GPHA.group_helpdesk_assignee,1,0,0,0
 
 access_helpdesk_ticket_manager,helpdesk.ticket manager,model_helpdesk_ticket,HelpDesk_GPHA.group_helpdesk_manager,1,1,1,1
 access_helpdesk_category_manager,helpdesk.category manager,model_helpdesk_category,HelpDesk_GPHA.group_helpdesk_manager,1,1,1,1
 access_helpdesk_tag_manager,helpdesk.tag manager,model_helpdesk_tag,HelpDesk_GPHA.group_helpdesk_manager,1,1,1,1
-access_helpdesk_ticket_log_manager,helpdesk.ticket.log manager,model_helpdesk_ticket_log,HelpDesk_GPHA.group_helpdesk_manager,1,1,1,1
-
-
-access_helpdesk_ticket_coordinator,helpdesk.ticket coordinator,model_helpdesk_ticket,HelpDesk_GPHA.group_helpdesk_coordinator,1,1,1,1
-access_helpdesk_category_coordinator,helpdesk.category coordinator,model_helpdesk_category,HelpDesk_GPHA.group_helpdesk_coordinator,1,1,1,0
-access_helpdesk_tag_coordinator,helpdesk.tag coordinator,model_helpdesk_tag,HelpDesk_GPHA.group_helpdesk_coordinator,1,1,1,1
-access_helpdesk_ticket_log_coordinator,helpdesk.ticket.log coordinator,model_helpdesk_ticket_log,HelpDesk_GPHA.group_helpdesk_coordinator,1,1,1,0
-
-
-access_helpdesk_ticket_assignee,helpdesk.ticket assignee,model_helpdesk_ticket,HelpDesk_GPHA.group_helpdesk_assignee,1,0,0,0
-access_helpdesk_category_assignee,helpdesk.category assignee,model_helpdesk_category,HelpDesk_GPHA.group_helpdesk_assignee,1,0,0,0
-access_helpdesk_tag_assignee,helpdesk.tag assignee,model_helpdesk_tag,HelpDesk_GPHA.group_helpdesk_assignee,1,0,0,0
-access_helpdesk_ticket_log_assignee,helpdesk.ticket.log assignee,model_helpdesk_ticket_log,HelpDesk_GPHA.group_helpdesk_assignee,1,0,0,0
+access_helpdesk_ticket_log_manager,helpdesk.ticket log manager,model_helpdesk_ticket_log,HelpDesk_GPHA.group_helpdesk_manager,1,1,1,1

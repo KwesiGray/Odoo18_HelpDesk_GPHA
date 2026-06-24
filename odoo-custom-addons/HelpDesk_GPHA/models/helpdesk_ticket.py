@@ -179,6 +179,15 @@ class HelpdeskTicket(models.Model):
         # e.g. 47.50 hours stored as 47.50
     )
 
+    occurred_date = fields.Date(
+        string='Date Occurred',
+        compute='_compute_occurred_parts',
+        store=True)
+    occurred_time = fields.Char(
+        string='Time Occurred',
+        compute='_compute_occurred_parts',
+        store=True)
+
     is_overdue = fields.Boolean(
         string='Overdue',
         compute='_compute_is_overdue',
@@ -208,9 +217,32 @@ class HelpdeskTicket(models.Model):
         compute='_compute_log_count',
     )
 
+    # Store the actual moment the problem occurred.
+    occurred_at = fields.Datetime(
+        string='Date/Time Problem Occurred',
+        tracking=True,
+        default=fields.Datetime.now,
+    )
+
+    office = fields.Char(
+        string='Office (Source)',
+        tracking=True)
+
     # ══════════════════════════════════════════════════════════════════════
     # 9. COMPUTE METHODS
     # ══════════════════════════════════════════════════════════════════════
+
+    @api.depends('occurred_at')
+    def _compute_occurred_parts(self):
+        for rec in self:
+            if rec.occurred_at:
+                rec.occurred_date = fields.Datetime.to_datetime(rec.occurred_at).date()
+                # Use user's timezone for display-oriented time
+                rec.occurred_time = fields.Datetime.context_timestamp(rec, rec.occurred_at).strftime('%H:%M')
+            else:
+                rec.occurred_date = False
+                rec.occurred_time = False
+
 
     @api.depends('log_ids')
     def _compute_log_count(self):

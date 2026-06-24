@@ -23,20 +23,23 @@
                                 string="Start"
                                 invisible="state != 'submitted'"
                                 class="btn-primary"
+                                groups="HelpDesk_GPHA.group_helpdesk_coordinator,HelpDesk_GPHA.group_helpdesk_manager,HelpDesk_GPHA.group_helpdesk_assignee"
                         />
                         <button
                                 name="action_pending"
                                 type="object"
                                 string="Set Pending"
-                                invisible="state != 'submitted'"
+                                invisible="state != 'in_progress'"
                                 class="btn-primary"
+                                groups="HelpDesk_GPHA.group_helpdesk_coordinator,HelpDesk_GPHA.group_helpdesk_manager"
                         />
                         <button
                                 name="action_resolve"
                                 type="object"
                                 string="Resolve"
-                                invisible="state != 'in_progress'"
+                                invisible="state not in ('in_progress','pending')"
                                 class="btn-success"
+                                groups="HelpDesk_GPHA.group_helpdesk_coordinator,HelpDesk_GPHA.group_helpdesk_manager,HelpDesk_GPHA.group_helpdesk_assignee"
                         />
                         <button
                                 name="action_close"
@@ -44,6 +47,7 @@
                                 string="Close"
                                 invisible="state != 'resolved'"
                                 class="btn-secondary"
+                                groups="HelpDesk_GPHA.group_helpdesk_coordinator,HelpDesk_GPHA.group_helpdesk_manager"
                         />
                         <button
                                 name="action_reopen"
@@ -51,6 +55,7 @@
                                 string="Reopen"
                                 invisible="state not in ('resolved', 'closed')"
                                 class="btn-secondary"
+                                groups="HelpDesk_GPHA.group_helpdesk_coordinator,HelpDesk_GPHA.group_helpdesk_manager"
                         />
                         <field
                                 name="state"
@@ -88,40 +93,33 @@
                                 <field name="reference" readonly="1"/>
                             </h5>
                             <h1>
-                                <field name="name" placeholder="Describe the problem in one line..."/>
+                                <field name="name" placeholder="Describe the problem in one line..."  readonly="state != 'draft'"/>
                             </h1>
-                            <field name="priority" widget="priority"/>
+                            <field name="priority" widget="priority" string="Priority Level"  readonly="state != 'draft'"/>
                         </div>
 
                         <group>
                             <group string="Problem details">
-                                <field
-                                        name="category_id"
-                                        domain="[('active', '=', True)]"
-                                        options="{'no_create': False, 'no_open': True}"
-                                />
+                                <field name="category_id" domain="[('active', '=', True)]" options="{'no_create': False, 'no_open': True}"  readonly="state != 'draft'"/>
                                 <field name="ticket_type" readonly="1"/>
-                                <field
-                                        name="tag_ids"
-                                        widget="many2many_tags"
-                                        options="{'color_field': 'color'}"
-                                />
-                                <field name="kanban_state" widget="state_selection"/>
+                                <field name="occurred_at"  readonly="state != 'draft'"/>
+                                <field name="occurred_date" invisible="state in 'draft'"/>
+                                <field name="occurred_time" invisible="state in 'draft'"/>
+                                <field name="tag_ids" widget="many2many_tags" options="{'color_field': 'color'}"  readonly="state in ('in_progress','pending','resolved','closed')"/>
+                                <field name="kanban_state" widget="state_selection" invisible="state in 'draft'"/>
                             </group>
 
-                            <group string="Assignment &amp; dates">
-                                <field name="reporter_id" widget="many2one_avatar_user"/>
+                            <group string="Assignment &amp; Dates">
+                                <field name="reporter_id" widget="many2one_avatar_user" readonly="1"/>
                                 <field
                                         name="assigned_to"
                                         widget="many2one_avatar_user"
                                         domain="[('share', '=', False)]"
+                                        readonly="state not in ('submitted', 'pending')"
+                                        groups="HelpDesk_GPHA.group_helpdesk_coordinator,HelpDesk_GPHA.group_helpdesk_manager,HelpDesk_GPHA.group_helpdesk_assignee"
                                 />
                                 <field name="sla_deadline" widget="remaining_days"/>
-                                <field
-                                        name="date_resolved"
-                                        readonly="1"
-                                        invisible="state not in ('resolved', 'closed')"
-                                />
+                                <field name="date_resolved" readonly="1" invisible="state not in ('resolved', 'closed')"/>
                                 <field name="is_overdue" invisible="1"/>
                             </group>
                         </group>
@@ -132,6 +130,7 @@
                                     colspan="2"
                                     nolabel="1"
                                     placeholder="Describe the problem in detail — steps to reproduce, error messages, location, equipment affected..."
+                                    readonly="state not in('draft' , 'submitted')"
                             />
                         </group>
 
@@ -154,13 +153,13 @@
 
                             <!-- TAB 2: Time Tracking -->
                             <page string="Time Tracking" name="tab_time">
-                                <group>
-                                    <group>
-                                        <field name="total_time_spent" readonly="1" string="Total time (hrs)"/>
-                                        <field name="resolution_time" readonly="1" string="Resolution time (hrs)"
-                                               invisible="state not in ('resolved','closed')"/>
-                                    </group>
-                                </group>
+                                     <group>
+                                         <group>
+                                             <field name="total_time_spent" readonly="1" string="Total time (hrs)"/>
+                                             <field name="resolution_time" readonly="1" string="Resolution time (hrs)"
+                                                   invisible="state not in ('resolved', 'closed')"/>
+                                         </group>
+                                     </group>
                                 <!-- Inline time log entry form -->
                                 <field name="log_ids">
                                     <list editable="bottom">
@@ -176,14 +175,7 @@
 
                             <!-- TAB 3: Extra Info -->
                             <page string="Extra Info" name="tab_extra"
-                                  groups="group_helpdesk_manager">
-                                <!--
-                                    groups= attribute on <page> → this entire tab
-                                    is only visible to Helpdesk Managers.
-                                    Regular users never see it.
-                                    This is how you show manager-only fields
-                                    without building a separate view.
-                                -->
+                                  groups="HelpDesk_GPHA.group_helpdesk_manager">
                                 <group>
                                     <group string="Audit">
                                         <field name="create_date"
@@ -220,7 +212,7 @@
             <field name="arch" type="xml">
                 <list
                         string="Problem Tickets"
-                        decoration-danger="is_overdue == True"
+                        decoration-danger="is_overdue"
                         decoration-warning="state == 'pending'"
                         decoration-success="state == 'resolved'"
                         decoration-muted="state == 'closed'"
@@ -258,7 +250,6 @@
                         default_group_by="state"
                         class="o_kanban_small_column"
                         on_create="quick_create"
-                        quick_create_view="helpdesk_problem_log.view_helpdesk_ticket_quick_create"
                         records_draggable="1"
                         group_create="0"
                 >
@@ -276,9 +267,6 @@
                             show a quick-create mini-form inside the column
                             instead of opening the full form view.
 
-                        quick_create_view=
-                            The external ID of a minimal form view used for
-                            quick creation. We'll define this below.
 
                         records_draggable="1"
                             Allows drag-and-drop cards between columns.
@@ -385,6 +373,7 @@
                                                      (e.g. "TKT/2024/0001")
                                             .raw_value → the stored DB value
                                         -->
+
                                     </small>
 
                                     <!-- Ticket subject — main card title -->
@@ -513,8 +502,8 @@
             </field>
         </record>
 
-        <!-- Menu -->
-        <menuitem id="helpdesk_ticket_menu" name="Help Desk" action="helpdesk_ticket_act_window"/>
+<!--        &lt;!&ndash; Menu &ndash;&gt;-->
+<!--        <menuitem id="helpdesk_ticket_menu" name="Help Desk" action="helpdesk_ticket_act_window"/>-->
 
     </data>
 </odoo>

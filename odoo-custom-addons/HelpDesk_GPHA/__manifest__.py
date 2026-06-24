@@ -15,6 +15,7 @@
         'security/ir.model.access.csv',
         'data/helpdesk_data.xml',
         'views/helpdesk_ticket.xml',
+        'views/helpdesk_menu.xml',
 
     ],
     'installable': True,

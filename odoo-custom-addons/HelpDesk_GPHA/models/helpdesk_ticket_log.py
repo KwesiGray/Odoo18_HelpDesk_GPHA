@@ -123,15 +123,77 @@ class HelpdeskTicketLog(models.Model):
     # helpdesk_ticket.py.
 
     # ══════════════════════════════════════════════════════════════════════
-    # 7. AUTO-LOG ON STATE CHANGES
+    # 7. HOOKS: CREATE & WRITE to update parent ticket's total_time_spent
     # ══════════════════════════════════════════════════════════════════════
     @api.model_create_multi
     def create(self, vals_list):
         """
-        Override to ensure logged_at is always set even if not supplied.
-        Also enforces that state_change entries always capture old/new state.
+        Override create to:
+        1. Ensure logged_at is always set even if not supplied.
+        2. After creating logs, immediately recompute parent ticket's total_time_spent
+
+        This ensures that total_time_spent updates IMMEDIATELY instead of waiting
+        for the next page load or explicit access to the field.
         """
         for vals in vals_list:
             if not vals.get('logged_at'):
                 vals['logged_at'] = fields.Datetime.now()
-        return super().create(vals_list)
+
+        # Call parent create
+        records = super().create(vals_list)
+
+        # Collect all parent tickets affected by these new logs
+        parent_tickets = records.mapped('ticket_id')
+        if parent_tickets:
+            # Force recompute of total_time_spent on all affected tickets
+            parent_tickets._compute_total_time()
+
+        return records
+
+    def write(self, vals):
+        """
+        Override write to:
+        1. Perform normal write operation.
+        2. If time_spent is being changed, immediately recompute parent ticket's total_time_spent
+
+        This ensures that when a user edits an existing time log entry,
+        the parent ticket's total updates right away.
+        """
+        # Capture parent tickets BEFORE the write — this handles cases
+        # where ticket_id is being moved from one ticket to another.
+        old_parent_tickets = self.mapped('ticket_id')
+
+        # Perform the write
+        result = super().write(vals)
+
+        # After write, collect the (possibly new) parent tickets
+        new_parent_tickets = self.mapped('ticket_id')
+
+        # Decide whether we need to recompute: if time_spent changed, or
+        # ticket_id changed (so logs moved between tickets), recompute both
+        # the old and new parent tickets to keep totals correct.
+        needs_recompute = False
+        if 'time_spent' in vals:
+            needs_recompute = True
+        if 'ticket_id' in vals:
+            needs_recompute = True
+
+        if needs_recompute:
+            # union of old and new
+            affected = (old_parent_tickets | new_parent_tickets)
+            if affected:
+                affected._compute_total_time()
+
+        return result
+
+    def unlink(self):
+        """
+        Override unlink so that when logs are deleted we recompute the
+        total_time_spent on their parent tickets.
+        """
+        parent_tickets = self.mapped('ticket_id')
+        result = super().unlink()
+        if parent_tickets:
+            parent_tickets._compute_total_time()
+
+        return result
