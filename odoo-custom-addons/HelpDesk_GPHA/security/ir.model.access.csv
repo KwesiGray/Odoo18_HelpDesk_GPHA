@@ -15,7 +15,7 @@ access_helpdesk_office_location_coordinator,helpdesk.office.location coordinator
 access_helpdesk_ticket_assignee,helpdesk.ticket assignee,model_helpdesk_ticket,HelpDesk_GPHA.group_helpdesk_assignee,1,1,0,0
 access_helpdesk_category_assignee,helpdesk.category assignee,model_helpdesk_category,HelpDesk_GPHA.group_helpdesk_assignee,1,0,0,0
 access_helpdesk_tag_assignee,helpdesk.tag assignee,model_helpdesk_tag,HelpDesk_GPHA.group_helpdesk_assignee,1,0,0,0
-access_helpdesk_ticket_log_assignee,helpdesk.ticket log assignee,model_helpdesk_ticket_log,HelpDesk_GPHA.group_helpdesk_assignee,1,0,0,0
+access_helpdesk_ticket_log_assignee,helpdesk.ticket log assignee,model_helpdesk_ticket_log,HelpDesk_GPHA.group_helpdesk_assignee,1,1,1,0
 access_helpdesk_office_location_assignee,helpdesk.office.location assignee,model_helpdesk_office_location,HelpDesk_GPHA.group_helpdesk_assignee,1,0,0,0
 
 access_helpdesk_ticket_manager,helpdesk.ticket manager,model_helpdesk_ticket,HelpDesk_GPHA.group_helpdesk_manager,1,1,1,1

@@ -1,4 +1,5 @@
 from odoo import models, fields, api
+from odoo.api import readonly
 from odoo.exceptions import ValidationError, UserError
 from datetime import timedelta, datetime
 
@@ -8,7 +9,7 @@ class HelpdeskTicket(models.Model):
     _name        = 'helpdesk.ticket'
     _description = 'Helpdesk Problem Ticket'
     _order       = 'priority desc, create_date desc'
-    _rec_name = 'name'
+    _rec_name = 'reference'
     # Odoo uses _rec_name when displaying this record as a label in
     # a Many2one dropdown on ANOTHER form. "name" is the default but
     # it's good practice to be explicit.
@@ -159,6 +160,11 @@ class HelpdeskTicket(models.Model):
         # reassigned from and to — invaluable for audits.
     )
 
+    date_time_logged = fields.Datetime(
+        string='Logged Date',
+        tracking=True,
+    )
+
     date_closed = fields.Datetime(
         string='Closed on',
         readonly=True,
@@ -192,13 +198,10 @@ class HelpdeskTicket(models.Model):
     # 8. COMPUTED FIELDS
     # ══════════════════════════════════════════════════════════════════════
 
-    resolution_time = fields.Float(
+    resolution_time = fields.Char(
         string='Resolution time (hrs)',
         compute='_compute_resolution_time',
         store=True,
-        digits=(10, 2),
-        # digits=(precision, scale) → 10 total digits, 2 decimal places
-        # e.g. 47.50 hours stored as 47.50
     )
 
     occurred_date = fields.Date(
@@ -227,11 +230,11 @@ class HelpdeskTicket(models.Model):
         string='Activity log',
     )
 
-    total_time_spent = fields.Float(
+    total_time_spent = fields.Char(
         string='Total time spent (hrs)',
         compute='_compute_total_time',
         store=True,
-        digits=(10, 2),
+
     )
 
     log_count = fields.Integer(
@@ -268,20 +271,18 @@ class HelpdeskTicket(models.Model):
         for rec in self:
             rec.log_count = len(rec.log_ids)
 
-    @api.depends('log_ids.time_spent')
+    @api.depends('date_time_logged', 'date_closed')
     def _compute_total_time(self):
-        """
-        @api.depends('log_ids.time_spent') — note the dot notation.
-        This tells Odoo: "recalculate when ANY log entry's time_spent
-        field changes on ANY log linked to this ticket."
-        Dot notation through relational fields is one of Odoo's
-        most powerful @api.depends features.
-        """
         for rec in self:
-            rec.total_time_spent = sum(rec.log_ids.mapped('time_spent'))
-            # .mapped('time_spent') → returns a list of all time_spent
-            # values across the entire log_ids recordset.
-            # sum() adds them up. Clean, readable, and works on 0 records too.
+            if rec.date_time_logged and rec.date_closed:
+                delta = rec.date_closed - rec.date_time_logged
+                total_seconds = int(delta.total_seconds())
+                hours, remainder = divmod(total_seconds, 3600)
+                minutes, seconds = divmod(remainder, 60)
+                rec.total_time_spent = f'{hours:02}:{minutes:02}:{seconds:02}'
+            else:
+                rec.total_time_spent = '00:00:00'
+
 
     @api.constrains('occurred_at')
     def _check_occurred_at_not_future(self):
@@ -314,16 +315,15 @@ class HelpdeskTicket(models.Model):
 
     @api.depends('date_resolved', 'create_date')
     def _compute_resolution_time(self):
-        """
-        Calculates how many hours elapsed between creation and resolution.
-        Only meaningful once date_resolved is set (i.e. ticket is resolved).
-        """
         for rec in self:
             if rec.date_resolved and rec.create_date:
                 delta = rec.date_resolved - rec.create_date
-                rec.resolution_time = round(delta.total_seconds() / 3600, 2)
+                total_seconds = int(delta.total_seconds())
+                hours, remainder = divmod(total_seconds, 3600)
+                minutes, seconds = divmod(remainder, 60)
+                rec.resolution_time = f'{hours:02}:{minutes:02}:{seconds:02}'
             else:
-                rec.resolution_time = 0.0
+                rec.resolution_time = '00:00:00'
 
     @api.depends('sla_deadline', 'state')
     def _compute_is_overdue(self):
@@ -409,18 +409,16 @@ class HelpdeskTicket(models.Model):
             if rec.state != 'draft':
                 raise UserError(f'Ticket "{rec.name}" is not in draft state.')
             old = rec.state
-            rec.state = 'submitted'
+            rec.write({
+                'state': 'submitted',
+                'date_time_logged': fields.Datetime.now(),
+
+            })
             rec._log_action('state_change', old_state=old, new_state='submitted')
 
 
-    # def action_start(self):
-    #     """Move ticket from draft → in_progress."""
-    #     for rec in self:
-    #         if rec.state != 'submitted':
-    #             raise UserError(
-    #                 f'Ticket "{rec.name}" is already submitted or beyond.'
-    #             )
-    #         rec.state = 'in_progress'
+
+
 
     def action_start(self):
         """Submitted → In Progress"""

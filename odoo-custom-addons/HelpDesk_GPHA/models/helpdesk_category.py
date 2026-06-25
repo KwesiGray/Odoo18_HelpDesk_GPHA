@@ -26,8 +26,9 @@ class HelpdeskCategory(models.Model):
     ticket_type = fields.Selection(
         selection=[
             ('it',    'IT / Technical'),
+            ('it ', 'IT / Software'),
             ('field', 'Field / Operational'),
-            ('hr', 'HR OPERATIONS'),
+            ('hr', 'HR Operations'),
             ('support', 'Support'),
             ('other', 'Other'),
         ],
