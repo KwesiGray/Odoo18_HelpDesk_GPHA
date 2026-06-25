@@ -102,6 +102,8 @@
                             <group string="Problem details">
                                 <field name="category_id" domain="[('active', '=', True)]" options="{'no_create': False, 'no_open': True}"  readonly="state != 'draft'"/>
                                 <field name="ticket_type" readonly="1"/>
+                                <field name="office" domain="[('active', '=', True)]" options="{'no_create': False, 'no_open': True}"  readonly="state != 'draft'"/>
+                                <field name="location"   readonly="1"/>
                                 <field name="occurred_at"  readonly="state != 'draft'"/>
                                 <field name="occurred_date" invisible="state in 'draft'"/>
                                 <field name="occurred_time" invisible="state in 'draft'"/>

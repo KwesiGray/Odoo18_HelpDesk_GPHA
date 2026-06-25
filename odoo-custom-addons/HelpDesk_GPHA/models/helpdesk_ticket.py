@@ -39,6 +39,22 @@ class HelpdeskTicket(models.Model):
         # Use widget="html" in the view (Odoo auto-applies this for Html fields).
     )
 
+    office = fields.Many2one(
+        comodel_name='helpdesk.office.location',
+
+        string='Office (Source)',
+        required =True,
+        store = True,
+        tracking=True)
+
+    location = fields.Selection(
+        related = 'office.location',
+        string='Location',
+        store = True,
+        readonly = True,
+        tracking=True)
+
+
     reporter_id = fields.Many2one(
         comodel_name='res.users',
         string='Reported by',
@@ -224,9 +240,6 @@ class HelpdeskTicket(models.Model):
         default=fields.Datetime.now,
     )
 
-    office = fields.Char(
-        string='Office (Source)',
-        tracking=True)
 
     # ══════════════════════════════════════════════════════════════════════
     # 9. COMPUTE METHODS
