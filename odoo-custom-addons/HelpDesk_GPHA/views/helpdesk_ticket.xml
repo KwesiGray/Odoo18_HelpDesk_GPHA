@@ -105,8 +105,6 @@
                                 <field name="office" domain="[('active', '=', True)]" options="{'no_create': False, 'no_open': True}"  readonly="state != 'draft'"/>
                                 <field name="location"   readonly="1"/>
                                 <field name="occurred_at"  readonly="state != 'draft'"/>
-                                <field name="occurred_date" invisible="state in 'draft'"/>
-                                <field name="occurred_time" invisible="state in 'draft'"/>
                                 <field name="tag_ids" widget="many2many_tags" options="{'color_field': 'color'}"  readonly="state in ('in_progress','pending','resolved','closed')"/>
                                 <field name="kanban_state" widget="state_selection" invisible="state in 'draft'"/>
                             </group>
@@ -120,8 +118,11 @@
                                         readonly="state not in ('submitted', 'pending')"
                                         groups="HelpDesk_GPHA.group_helpdesk_coordinator,HelpDesk_GPHA.group_helpdesk_manager,HelpDesk_GPHA.group_helpdesk_assignee"
                                 />
+                                <field name="occurred_date" invisible="state in 'draft'"/>
+                                <field name="occurred_time" invisible="state in 'draft'"/>
                                 <field name="sla_deadline" widget="remaining_days"/>
                                 <field name="date_resolved" readonly="1" invisible="state not in ('resolved', 'closed')"/>
+                                <field name="date_closed" readonly="1" invisible="state not in ('resolved', 'closed')"/>
                                 <field name="is_overdue" invisible="1"/>
                             </group>
                         </group>

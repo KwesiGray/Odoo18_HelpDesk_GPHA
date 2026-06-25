@@ -1,6 +1,6 @@
 from odoo import models, fields, api
 from odoo.exceptions import ValidationError, UserError
-from datetime import timedelta
+from datetime import timedelta, datetime
 
 
 class HelpdeskTicket(models.Model):
@@ -159,6 +159,12 @@ class HelpdeskTicket(models.Model):
         # reassigned from and to — invaluable for audits.
     )
 
+    date_closed = fields.Datetime(
+        string='Closed on',
+        readonly=True,
+        tracking=True,
+    )
+
 
 
     date_resolved = fields.Datetime(
@@ -276,6 +282,14 @@ class HelpdeskTicket(models.Model):
             # .mapped('time_spent') → returns a list of all time_spent
             # values across the entire log_ids recordset.
             # sum() adds them up. Clean, readable, and works on 0 records too.
+
+    @api.constrains('occurred_at')
+    def _check_occurred_at_not_future(self):
+        for rec in self:
+            if rec.occurred_at and rec.occurred_at > datetime.now():
+                raise ValidationError(
+                    'Date/Time Problem Occurred cannot be in the future.'
+                )
 
     @api.depends('create_date', 'priority')
     def _compute_sla_deadline(self):
@@ -451,6 +465,10 @@ class HelpdeskTicket(models.Model):
             if rec.state != 'resolved':
                 raise UserError('Only resolved tickets can be closed.')
             old = rec.state
+            rec.write({
+                'state': 'closed',
+                'date_closed': fields.Datetime.now(),
+            })
             rec.state = 'closed'
             rec._log_action('state_change', old_state=old, new_state='closed')
 
